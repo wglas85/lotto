@@ -1,0 +1,10 @@
+Source: lotto
+Priority: extra
+Section: games
+Maintainer: Wolfgang Glas <wglas85@gmail.com>
+Build-Depends: cdbs, debhelper, python-stdeb, devscripts, python3, python3-gi
+
+Package: lotto
+Architecture: all
+Depends: python3, python3-gi
+Description: Python based Lotto GUI.

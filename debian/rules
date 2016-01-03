@@ -1,0 +1,38 @@
+#!/usr/bin/make -f
+#
+# $Id: rules 350 2014-12-08 23:22:01Z osgi $
+
+prefix=/usr
+
+package = lotto
+LOTTO_HOME=/usr/share/$(package)
+
+DEB_SHLIBDEPS_INCLUDE :=
+
+DEB_DH_ALWAYS_EXCLUDE := .git
+
+%:
+	dh $@
+
+override_dh_auto_install: common-install-indep
+
+
+override_dh_auto_build:
+
+clean::
+	rm -rf debian/$(package) *~ /*~ debian/files* debian/*substvars debian/*.log build
+	rm -f common-install-indep
+
+#
+# info pages, locale data and static libraries may conflict with
+# already installed binutils packages.
+#
+
+common-install-indep::
+	rm -rf debian/$(package)
+	mkdir -p debian/$(package)
+#	python setup.py install --root=debian/$(package) --install-layout=deb --install-lib=$(LOTTO_HOME) --install-scripts=$(LOTTO_HOME) || /bin/true
+#	install -m 755 scripts/lotto.sh debian/$(package)/usr/bin/lotto
+	(cd src/lotto; tar cf - usr) | (cd debian/$(package); tar xf -)
+	touch common-install-indep
+

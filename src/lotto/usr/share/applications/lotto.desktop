@@ -1,0 +1,8 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Name=lotto
+Exec=lotto
+Icon=/usr/share/icons/hicolor/scalable/apps/lotto.svg
+Terminal=false
+Type=Application
+Categories=GTK;Game;Core;
