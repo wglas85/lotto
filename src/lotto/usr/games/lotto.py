@@ -28,7 +28,7 @@ from copy import deepcopy
 
 
 class Lotto:
-    def __init__(self,editables=None,tips=1,state=None,vs=None):
+    def __init__(self,editables=None,tips=1,state=None,zs=None):
         if editables is None:
             self.editables = [False for i in range(tips)]  # @UnusedVariable
         else:
@@ -38,13 +38,13 @@ class Lotto:
             self.state =  [([False for i in range(45)] if self.editables[j] else [None for i in range(45)]) for j in range(tips)]  # @UnusedVariable
         else:
             self.state = state
-        if vs is None:
-            self.vs = [[None,None,None,None,None,None,None] for i in range(tips)]  # @UnusedVariable
+        if zs is None:
+            self.zs = [[None,None,None,None,None,None,None] for i in range(tips)]  # @UnusedVariable
         else:
-            self.vs = vs
+            self.zs = zs
 
 class LottoWidget(Gtk.Grid):
-    def __init__(self,state=None,editable=True,zs=None):
+    def __init__(self,state=None,editable=True, zs=None):
         if zs is None:
             self.zs = [None,None,None,None,None,None,None]
         else:
@@ -78,13 +78,18 @@ class LottoWidget(Gtk.Grid):
                     self.buttons[buttonId].set_label("%d \u2009"%(buttonId+1))
                 else:
                     self.buttons[buttonId].set_label("%d"%(buttonId+1))
-            elif i2==False and not self.editable:
-                self.buttons[i1].set_image(Gtk.Image.new_from_file(os.path.join("/usr/share/lotto/images","crossed.svg")))
-                buttonId = i1
-                if buttonId < 9:
-                    self.buttons[buttonId].set_label("%d \u2009"%(buttonId+1))
-                else:
+            elif i2==False:
+                if self.editable:
+                    self.buttons[i1].props.image = None
+                    buttonId = i1
                     self.buttons[buttonId].set_label("%d"%(buttonId+1))
+                else:
+                    self.buttons[i1].set_image(Gtk.Image.new_from_file(os.path.join("/usr/share/lotto/images","crossed.svg")))
+                    buttonId = i1
+                    if buttonId < 9:
+                        self.buttons[buttonId].set_label("%d \u2009"%(buttonId+1))
+                    else:
+                        self.buttons[buttonId].set_label("%d"%(buttonId+1))
             elif i2=="Zusatzzahl":
                 self.buttons[i1].set_image(Gtk.Image.new_from_file(os.path.join("/usr/share/lotto/images","ok2.svg")))
                 buttonId = i1
@@ -92,7 +97,12 @@ class LottoWidget(Gtk.Grid):
                     self.buttons[buttonId].set_label("%d \u2009"%(buttonId+1))
                 else:
                     self.buttons[buttonId].set_label("%d"%(buttonId+1))
-    
+        self.show_all()
+    def clear(self):
+        self.editable = True
+        self.state = [False for i in range(45)]  # @UnusedVariable
+        self.zs = [None for i in range(7)]  # @UnusedVariable
+        self.set_buttons()
     def on_button1_clicked(self, widget):
         
         buttonId = self.buttons.index(widget)
@@ -257,7 +267,7 @@ class LottoWindow(Gtk.Window):
         self.notebook = Gtk.Notebook()
         self.lottowidgets = []
         for i in range(self.lotto.tips):
-            self.lottowidgets.append(LottoWidget(self.lotto.state[i], self.lotto.editables[i],self.lotto.vs[i]))
+            self.lottowidgets.append(LottoWidget(self.lotto.state[i], self.lotto.editables[i],self.lotto.zs[i]))
             self.notebook.append_page(child=self.lottowidgets[i],tab_label=Gtk.Label(label="tipp %s"%(i+1)))
         self.set_buttons()
         
@@ -298,7 +308,7 @@ class LottoWindow(Gtk.Window):
                     self.notebook = Gtk.Notebook()
                     self.lottowidgets = []
                     for i in range(self.lotto.tips):
-                        self.lottowidgets.append(LottoWidget(self.lotto.state[i], self.lotto.editables[i],self.lotto.vs[i]))
+                        self.lottowidgets.append(LottoWidget(self.lotto.state[i], self.lotto.editables[i],self.lotto.zs[i]))
                         self.notebook.append_page(child=self.lottowidgets[i],tab_label=Gtk.Label(label="tipp %s"%(i+1)))
                     self.set_buttons()
                     self.add(self.notebook)
@@ -370,18 +380,43 @@ class LottoWindow(Gtk.Window):
         self.menu = get_menu_from_dict(self.menuitems)
         self.menubutton.set_popup(self.menu)
     def my_remove(self):
+        for i in self.lottowidgets:
+            i.clear()
+    def reaload(self):
         tips = self.config.getint("tips", "tips")
-        self.lotto = Lotto([True for i in range(tips)], tips)  # @UnusedVariable
-        self.remove(self.notebook)
-        self.notebook = Gtk.Notebook()
-        self.lottowidgets = []
+        len_editables = len(self.lotto.editables)
+        if len_editables>tips:
+            self.lotto.editables = self.lotto.editables[:tips]
+        elif len_editables<tips:
+            self.lotto.editables += [True for i in range(tips-len_editables)]  # @UnusedVariable
+        
+        len_state = len(self.lotto.state)
+        if len_state>tips:
+            self.lotto.state = self.lotto.state[:tips]
+        elif len_state<tips:
+            self.lotto.state += [[False for j in range(45)] for i in range(tips-len_state)]  # @UnusedVariable
+        
+        len_vs = len(self.lotto.zs)
+        if len_vs>tips:
+            self.lotto.zs = self.lotto.zs[:tips]
+        elif len_vs<tips:
+            self.lotto.zs += [[None for j in range(7)] for i in range(tips-len_vs)]  # @UnusedVariable
+        
+        self.lotto.tips = tips
+        
         self.menuitems["tipps"] = {i+1:self.on_tipp_clicked for i in range(self.lotto.tips)}
         self.load_menu()
-        for i in range(self.lotto.tips):
-            self.lottowidgets.append(LottoWidget(self.lotto.state[i], self.lotto.editables[i]))
-            self.notebook.append_page(child=self.lottowidgets[i],tab_label=Gtk.Label(label="tipp %s"%(i+1)))
+        len_lottowidgets = len(self.lottowidgets)
+        if len_lottowidgets>tips:
+            self.lottowidgets = self.lottowidgets[:tips]
+            for i in range(len_lottowidgets-tips):
+                self.notebook.remove_page(tips)
+        elif len_lottowidgets<tips:
+            for i in range(tips-len_lottowidgets):
+                i2 = len_lottowidgets+i
+                self.lottowidgets.append(LottoWidget(self.lotto.state[i2], self.lotto.editables[i2], self.lotto.zs[i2]))
+                self.notebook.append_page(child=self.lottowidgets[i2],tab_label=Gtk.Label(label="tipp %s"%(i2+1)))
         self.set_buttons()
-        self.add(self.notebook)
         self.show_all()
     def on_realoadButton_clicked(self,event):
         self.my_remove()
@@ -393,6 +428,7 @@ class LottoWindow(Gtk.Window):
             fp = open(os.path.expanduser("~/.local/share/lotto/preferences.ini"),"w")
             self.config.write(fp)
             fp.close()
+            self.reaload()
         dialog.destroy()
     def closedf(self,*a):
         self.config.clear()
