@@ -1,3 +1,9 @@
+lotto (0.4.0-1) all; urgency=medium
+
+  * extrakt tipp model and add LottoWidget.
+
+ -- Wolfgang Glas <wglas85@gmail.com>  Sun, 03 Jan 2016 18:50:00 +0100
+
 lotto (0.3.0-1) all; urgency=medium
 
   * Complete project refurbishment.
