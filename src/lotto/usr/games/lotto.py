@@ -20,7 +20,7 @@ del dire
 import dialogs  # @UnresolvedImport
 from RandomGenerator import RandomGenerator  # @UnresolvedImport
 from configparser import ConfigParser
-from gi.repository import Gtk
+from gi.repository import Gtk, GObject
 from gi.repository import Gdk
 import datetime
 import pickle
@@ -82,7 +82,7 @@ class TippWidget(Gtk.Grid):
     def set_buttons(self):
         for i1,i2 in enumerate(self.tipp.state):
             if i2==True:
-                self.buttons[i1].set_image(Gtk.Image.new_from_file(os.path.join("/usr/share/lotto/images","crossed.svg" if self.editable else "ok.svg")))
+                self.buttons[i1].set_image(Gtk.Image.new_from_file(os.path.join("/usr/share/lotto/images","crossed.svg" if self.tipp.editable else "ok.svg")))
                 buttonId = i1
                 if buttonId < 9:
                     self.buttons[buttonId].set_label("%d \u2009"%(buttonId+1))
@@ -126,7 +126,7 @@ class TippWidget(Gtk.Grid):
             else:
                 self.buttons[buttonId].set_label("%d"%(buttonId+1))
                 
-            self.state[buttonId] = True
+            self.tipp.state[buttonId] = True
     def ziehung(self,z1,z2,z3,z4,z5,z6,z7):
         #z1 test
         if self.tipp.zs[0] is not None:
@@ -243,6 +243,10 @@ class LottoWidget(Gtk.Notebook):
         Gtk.Notebook.__init__(self)
         self.set_scrollable(True)
         
+        GObject.type_register(LottoWidget)
+        GObject.signal_new("reaload",LottoWidget,GObject.SIGNAL_RUN_FIRST,
+                   GObject.TYPE_NONE, [])
+        
         self.tippwidgets = []
         for i in range(self.lotto.get_n_tipps()):
             self.tippwidgets.append(TippWidget(self.lotto.get_nth_tipp(i)))
@@ -350,20 +354,23 @@ class LottoWidget(Gtk.Notebook):
         len_tippwidgets = len(self.tippwidgets)
         if len_tippwidgets>tips:
             self.tippwidgets = self.tippwidgets[:tips]
+            self.lotto.tipps = self.lotto.tipps
             for i in range(len_tippwidgets-tips):
                 self.remove_page(tips)
         elif len_tippwidgets<tips:
             for i in range(tips-len_tippwidgets):
                 i2 = len_tippwidgets+i
-                self.tippwidgets.append(TippWidget())
+                self.lotto.append(Tipp())
+                self.tippwidgets.append(TippWidget(self.lotto.get_nth_tipp(i2)))
                 self.append_page(child=self.tippwidgets[i2],tab_label=Gtk.Label(label="tipp %s"%(i2+1)))
         self.set_buttons()
         self.show_all()
+        self.emit("reaload")
     def preferences(self):
         dialog = dialogs.preferencesdialog(self.get_tooltip_window())
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
-            self.config.set("tipps", "tipps", str(dialog.tips))
+            self.config.set("tipps", "tipps", str(dialog.tipps))
             fp = open(os.path.expanduser("~/.local/share/lotto/preferences.ini"),"w")
             self.config.write(fp)
             fp.close()
@@ -382,6 +389,7 @@ class LottoWindow(Gtk.Window):
         
         
         self.lottowidget = LottoWidget(*args,**kwargs)
+        self.lottowidget.connect("reaload",self.on_reaload)
         
         self.headerbar = Gtk.HeaderBar()
         self.headerbar.set_title("lotto")
@@ -420,6 +428,7 @@ class LottoWindow(Gtk.Window):
             return menu
         self.menu = get_menu_from_dict(self.menuitems)
         self.menubutton.set_popup(self.menu)
+        self.show_all()
     def on_remove_clicked(self,x):
         self.lottowidget.clear()
     def on_save_as_clicked(self,x):
@@ -445,8 +454,9 @@ class LottoWindow(Gtk.Window):
     
     def on_ziehung_clicked(self,event):
         self.lottowidget.ziehung()
-    
-        self.menuitems["tipps"] = {i+1:self.on_tipp_clicked for i in range(self.lotto.tips)}
+    def on_reaload(self,target):
+        print("bummer")
+        self.menuitems["tipps"] = {i+1:self.on_tipp_clicked for i in range(self.lottowidget.lotto.get_n_tipps())}
         self.load_menu()
 
 if __name__ == '__main__':

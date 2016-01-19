@@ -21,19 +21,19 @@ class preferencesdialog(Gtk.Dialog):
         
         self.set_resizable(False)
         
-        self.tips = self.config.getint("tips", "tips")
+        self.tipps = self.config.getint("tipps", "tipps")
         
         self.notebook = Gtk.Notebook()
-        self.notebookpages = [(Gtk.Entry(text=self.tips),Gtk.Label(label="tips"))]
+        self.notebookpages = [(Gtk.Entry(text=self.tipps),Gtk.Label(label="tipps"))]
         for child,tab_label in self.notebookpages:
             self.notebook.append_page(child=child,tab_label=tab_label)
-        self.notebookpages[0][0].connect("notify::text",self.on_tips_changed)
+        self.notebookpages[0][0].connect("notify::text",self.on_tipps_changed)
         box = self.get_content_area()
         box.add(self.notebook)
         self.show_all()
-    def on_tips_changed(self,target,params):
+    def on_tipps_changed(self,target,params):
         try:
-            self.tips = int(target.get_text())
+            self.tipps = int(target.get_text())
         except:
             pass
 class winningsdialog(Gtk.Dialog):
