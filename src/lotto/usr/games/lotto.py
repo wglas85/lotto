@@ -151,7 +151,7 @@ class TippWidget(Gtk.Grid):
             z7 = self.tipp.zs[6]
         self.zs = [z1,z2,z3,z4,z5,z6,z7]
         
-        if self.tipp.state.count(True)==6 and self.editable:
+        if self.tipp.state.count(True)==6 and self.tipp.editable:
             self.editable = False
             
             workstate = deepcopy(self.state)
