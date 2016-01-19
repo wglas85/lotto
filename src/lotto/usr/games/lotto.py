@@ -455,7 +455,6 @@ class LottoWindow(Gtk.Window):
     def on_ziehung_clicked(self,event):
         self.lottowidget.ziehung()
     def on_reaload(self,target):
-        print("bummer")
         self.menuitems["tipps"] = {i+1:self.on_tipp_clicked for i in range(self.lottowidget.lotto.get_n_tipps())}
         self.load_menu()
 
