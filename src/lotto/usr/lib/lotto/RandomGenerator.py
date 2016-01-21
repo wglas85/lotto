@@ -11,10 +11,10 @@ class RandomGenerator:
 
     def nextNumber(self,maxValue):
         z = abs(int.from_bytes(self.randomfp.read(10),"big"))
-        z = z % maxValue + 1
+        z = z % maxValue
         while z in self.randomset:
             z = abs(int.from_bytes(self.randomfp.read(10),"big"))
-            z = z % maxValue + 1
+            z = z % maxValue
         self.randomset.add(z)
         return z
         

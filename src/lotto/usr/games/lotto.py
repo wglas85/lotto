@@ -22,7 +22,7 @@ from RandomGenerator import RandomGenerator  # @UnresolvedImport
 from configparser import ConfigParser
 from gi.repository import Gtk, GObject
 from gi.repository import Gdk
-import datetime
+import time
 import pickle
 from copy import deepcopy
 
@@ -44,7 +44,7 @@ class Lotto:
         
 
 class Tipp:
-    def __init__(self,editable=None,state=None,zs=None):
+    def __init__(self,editable=None,state=None):
         if editable is None:
             self.editable = True
         else:
@@ -53,14 +53,9 @@ class Tipp:
             self.state =  45 * [False] if self.editable else 45 * [None]  # @UnusedVariable
         else:
             self.state = state
-        if zs is None:
-            self.zs = 7 * [None]
-        else:
-            self.zs = zs
     def clear(self):
         self.editable = True
         self.state =  45 * [False]
-        self.zs = 7 * [None]
         
 
 class TippWidget(Gtk.Grid):
@@ -128,115 +123,58 @@ class TippWidget(Gtk.Grid):
                 
             self.tipp.state[buttonId] = True
     def ziehung(self,z1,z2,z3,z4,z5,z6,z7):
-        #z1 test
-        if self.tipp.zs[0] is not None:
-            z1 = self.tipp.zs[0]
-        #z2 test
-        if self.tipp.zs[1] is not None:
-            z2 = self.tipp.zs[1]
-        #z3 test
-        if self.tipp.zs[2] is not None:
-            z3 = self.tipp.zs[2]
-        #z4 test
-        if self.tipp.zs[3] is not None:
-            z4 = self.tipp.zs[3]
-        #z5 test
-        if self.tipp.zs[4] is not None:
-            z5 = self.tipp.zs[4]
-        #z6 test
-        if self.tipp.zs[5] is not None:
-            z6 = self.tipp.zs[5]
-        #z7 test
-        if self.tipp.zs[6] is not None:
-            z7 = self.tipp.zs[6]
-        self.zs = [z1,z2,z3,z4,z5,z6,z7]
         
         if self.tipp.state.count(True)==6 and self.tipp.editable:
-            self.editable = False
+            newstate = []
             
-            workstate = deepcopy(self.state)
-            
-            for i1,i2 in enumerate(self.state):
+            numbers = 0
+            Zusatzzahl = False
+            for i1,i2 in enumerate(self.tipp.state):
                 if i2==True:
-                    workstate[i1] = False
+                    if i1==z1 or i1==z2 or i1==z3 or i1==z4 or i1==z5 or i1==z6:
+                        numbers += 1
+                        newstate.append(True)
+                    elif i1==z7:
+                        Zusatzzahl = True
+                        newstate.append("Zusatzzahl")
+                    else:
+                        newstate.append(False)
                 elif i2==False:
-                    workstate[i1] = None
-                    
-            
-            #print("%d,%d,%d,%d,%d,%d,%d"%(z1,z2,z3,z4,z5,z6,z7))
-            #z1 = 1
-            #z2 = 2
-            #z3 = 3
-            #z4 = 4
-            #z5 = 5
-            #z6 = 6
-            #z7 = 7
-            #Auswertung↓
-            if self.state[z1-1]==True:
-                z1A = 1
-                workstate[z1-1] = True
-            else:
-                z1A = 0
-            if self.state[z2-1]==True:
-                z2A = 1
-                workstate[z2-1] = True
-            else:
-                z2A = 0
-            if self.state[z3-1]==True:
-                z3A = 1
-                workstate[z3-1] = True
-            else:
-                z3A = 0
-            if self.state[z4-1]==True:
-                z4A = 1
-                workstate[z4-1] = True
-            else:
-                z4A = 0
-            if self.state[z5-1]==True:
-                z5A = 1
-                workstate[z5-1] = True
-            else:
-                z5A = 0
-            if self.state[z6-1]==True:
-                z6A = 1
-                workstate[z6-1] = True
-            else:
-                z6A = 0
-            zA = z1A+z2A+z3A+z4A+z5A+z6A
-            datetimev = datetime.datetime.now().isoformat()
-            Zahl_zu_Wort = {0:"null",1:"eins",2:"zwei",3:"drei",4:"vier",5:"fünf",6:"sechs"}
-            if self.state[z7-1]==True:
-                sys.stdout.write("%ser mit Zusatzzahl\n"%(Zahl_zu_Wort[zA]))
-                if zA>2:
+                    newstate.append(None)
+            datetime = time.strftime("%d.%B %Y, %H:%M")
+            if Zusatzzahl:
+                sys.stdout.write("%ser mit Zusatzzahl\n"%(numbers))
+                if numbers>2:
                     filename = os.path.expanduser("~/.local/share/lotto/history.txt")
                     f = open(filename, 'a')
-                    f.write("%s : %der mit Zusatzzahl\n"%(datetimev,zA))
+                    f.write("%s : %der mit Zusatzzahl\n"%(datetime,numbers))
                     f.close()
-                workstate[z7-1] = "Zusatzzahl"
+                newstate[z7] = "Zusatzzahl"
             else:
-                sys.stdout.write("%ser\n"%(Zahl_zu_Wort[zA]))
-                if zA>2:
+                sys.stdout.write("%ser\n"%(numbers))
+                if numbers>2:
                     filename = os.path.expanduser("~/.local/share/lotto/history.txt")
                     f = open(filename, 'a')
-                    f.write("%s : %der\n"%(datetimev,zA))
+                    f.write("%s : %der\n"%(datetime,numbers))
                     f.close()
             #Auswertung↑
-            self.state = workstate
+            self.tipp.state = newstate
+            self.tipp.editable = False
             self.set_buttons()
                 
 
 class LottoWidget(Gtk.Notebook):
     
-    def __init__(self, lotto=None, tips=None, file=None):
+    def __init__(self, lotto=None, tipps=None, file=None):
         
         self.file = file
         
         self.config = ConfigParser()
         self.config.read(os.path.expanduser("~/.local/share/lotto/preferences.ini"))
-        if tips == None:
-            tips = self.config.getint("tipps", "tipps")
+        if tipps == None:
+            tipps = self.config.getint("tipps", "tipps")
         if lotto == None:
-            self.lotto = Lotto([Tipp() for i in range(tips)])  # @UnusedVariable
+            self.lotto = Lotto([Tipp() for i in range(tipps)])  # @UnusedVariable
         else:
             self.lotto = lotto
             
@@ -274,8 +212,8 @@ class LottoWidget(Gtk.Notebook):
                         self.remove_page(0)
                     self.lotto = newlotto
                     self.tippwidgets = []
-                    for i in range(self.lotto.tips):
-                        self.tippwidgets.append(LottoWidget(self.lotto.state[i], self.lotto.editables[i],self.lotto.zs[i]))
+                    for i in range(self.lotto.get_n_tipps()):
+                        self.tippwidgets.append(TippWidget(self.lotto.tipps[i]))
                         self.append_page(child=self.tippwidgets[i],tab_label=Gtk.Label(label="tipp %s"%(i+1)))
                     self.set_buttons()
                     self.show_all()
@@ -326,6 +264,7 @@ class LottoWidget(Gtk.Notebook):
     def ziehung(self):
         rg = RandomGenerator()
         zs = (rg.nextNumber(45), rg.nextNumber(45), rg.nextNumber(45), rg.nextNumber(45), rg.nextNumber(45), rg.nextNumber(45), rg.nextNumber(45))
+        print(zs)
         for i in self.tippwidgets:
             i.ziehung(*zs)
         rg.finalize()
@@ -348,17 +287,17 @@ class LottoWidget(Gtk.Notebook):
         for i in self.tippwidgets:
             i.clear()
     def reaload(self):
-        tips = self.config.getint("tipps", "tipps")
+        tipps = self.config.getint("tipps", "tipps")
         
         
         len_tippwidgets = len(self.tippwidgets)
-        if len_tippwidgets>tips:
-            self.tippwidgets = self.tippwidgets[:tips]
-            self.lotto.tipps = self.lotto.tipps
-            for i in range(len_tippwidgets-tips):
-                self.remove_page(tips)
-        elif len_tippwidgets<tips:
-            for i in range(tips-len_tippwidgets):
+        if len_tippwidgets>tipps:
+            self.tippwidgets = self.tippwidgets[:tipps]
+            self.lotto.tipps = self.lotto.tipps[:tipps]
+            for i in range(len_tippwidgets-tipps):
+                self.remove_page(tipps)
+        elif len_tippwidgets<tipps:
+            for i in range(tipps-len_tippwidgets):
                 i2 = len_tippwidgets+i
                 self.lotto.append(Tipp())
                 self.tippwidgets.append(TippWidget(self.lotto.get_nth_tipp(i2)))
@@ -437,7 +376,7 @@ class LottoWindow(Gtk.Window):
         self.lottowidget.save()
     def on_wins_clicked(self,x):
         self.lottowidget.wins()
-    def on_preferences_clicked(self,event):
+    def on_preferences_clicked(self,x):
         self.lottowidget.preferences()
     def on_tipp_clicked(self,target):
         tipp = int(target.get_label())
@@ -478,20 +417,20 @@ if __name__ == '__main__':
         win.show_all()
         Gtk.main()
     else:
-        tips = None
+        tipps = None
         file = None
         for i1,i2 in enumerate(sys.argv):
             if i2=="--":
                 break
-            elif i2 == "--tips":
+            elif i2 == "--tipps":
                 try:
-                    tips = sys.argv[i1+1]
+                    tipps = sys.argv[i1+1]
                 except IndexError:
-                    sys.stderr.write("""lotto: Die Option »--tips« erfordert ein Argument
+                    sys.stderr.write("""lotto: Die Option »--tipps« erfordert ein Argument
 „lotto --help“ liefert weitere Informationen.""")
-            elif i2.startswith("--tips="):
+            elif i2.startswith("--tipps="):
                 if i2[7:].isdigit():
-                    tips = int(i2[7:])
+                    tipps = int(i2[7:])
             else:
                 file = os.path.abspath(i2)
         try:
@@ -507,7 +446,7 @@ if __name__ == '__main__':
         
         
         if file==None:
-            win = LottoWindow(tips=tips)
+            win = LottoWindow(tipps=tipps)
         else:
             win = LottoWindow(lotto=pickle.load(open(file,"rb")),file=file)
         win.connect("destroy", Gtk.main_quit)
